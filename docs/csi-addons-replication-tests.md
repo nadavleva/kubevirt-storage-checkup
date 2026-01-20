@@ -25,6 +25,45 @@ The CSI Addons sidecar supports the following replication operations:
 
 ---
 
+## Cluster Requirements
+
+### Single-Cluster vs Multi-Cluster
+
+| Scenario | Cluster Setup | Description |
+|----------|---------------|-------------|
+| **API Validation** | Single cluster | Tests replication APIs work correctly |
+| **Full DR Testing** | Multi-cluster | Tests actual disaster recovery failover |
+
+### Detailed Requirements
+
+| Requirement | Single-Cluster Mode | Multi-Cluster Mode |
+|-------------|---------------------|-------------------|
+| **Clusters Needed** | 1 | 2 (primary + secondary) |
+| **Worker Nodes** | 1+ | 1+ per cluster |
+| **Storage Backend** | Replication-capable CSI driver | Same driver on both clusters |
+| **Network** | Standard | Cross-cluster connectivity |
+| **CNV Required** | Only for Tests 7-8 | Only for Tests 7-8 |
+
+### Test Availability by Cluster Setup
+
+| Test | Single Cluster | Multi-Cluster | CNV Required |
+|------|----------------|---------------|--------------|
+| 1. Enable Volume Replication | ✅ Yes | ✅ Yes | ❌ No |
+| 2. Get Replication Info | ✅ Yes | ✅ Yes | ❌ No |
+| 3. Demote Primary Volume | ✅ Yes | ✅ Yes | ❌ No |
+| 4. Promote Secondary Volume | ✅ Yes | ✅ Yes | ❌ No |
+| 5. Resync Volume | ⚠️ Limited | ✅ Yes | ❌ No |
+| 6. Disable Volume Replication | ✅ Yes | ✅ Yes | ❌ No |
+| 7. VM with Replicated Storage | ✅ Yes | ✅ Yes | ✅ Yes |
+| 8. Failover with Running VM | ❌ No | ✅ Yes | ✅ Yes |
+
+> **Note:** 
+> - **Single-cluster mode** validates that the CSI driver correctly implements the replication API operations. The storage backend may create local replicas or operate in a degraded mode.
+> - **Multi-cluster mode** is required for testing actual disaster recovery scenarios where data is replicated across geographically separated sites.
+> - **Resync** in single-cluster mode may only verify the API call succeeds, not actual data synchronization.
+
+---
+
 ## Proposed Test Cases
 
 ### Replication Test Suite
@@ -285,7 +324,8 @@ spec:
 | `spec.param.enableReplicationTests` | Enable replication test suite | `false` |
 | `spec.param.volumeReplicationClass` | VolumeReplicationClass to use | (auto-detect) |
 | `spec.param.replicationTimeout` | Timeout for replication operations | 5m |
-| `spec.param.skipFailoverTest` | Skip failover test (requires special setup) | `true` |
+| `spec.param.skipFailoverTest` | Skip failover test (requires multi-cluster) | `true` |
+| `spec.param.secondaryClusterKubeconfig` | Kubeconfig for secondary cluster (multi-cluster mode) | (none) |
 
 ---
 
